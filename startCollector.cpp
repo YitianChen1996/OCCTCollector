@@ -11,9 +11,10 @@ using namespace std;
 
 string requestURL = "http://binghamtonupublic.etaspot.net/service.php?service=get_vehicles&includeETAData=0&orderedETAArray=0&token=TESTING";
 
-string tempFileName = "data.txt";
+string tempFileName = "data.txt", curFileName;
 
 unsigned long lineCount = 0, fileCount = 0, MAX_LOG_PER_FILE = 100000;
+bool firstWriteToThisFile, firstWrite;
 
 void parseUsefulContent(const string &content) {
 	size_t contentLen = content.length(), pos = 0;
@@ -38,25 +39,37 @@ void parseUsefulContent(const string &content) {
 			if (key == "\"receiveTime\"") { break; }
 		}
 		string writeToFile;
-		writeToFile += "[" + myMap.find("\"receiveTime\"")->second + "]: ";
-		writeToFile += "busNum: " + myMap.find("\"equipmentID\"")->second + ", ";
-		writeToFile += "lat: " + myMap.find("\"lat\"")->second + ", ";
-		writeToFile += "lng: " + myMap.find("\"lng\"")->second + ", ";
-		writeToFile += "routeID: " + myMap.find("\"routeID\"")->second + ", ";
-		writeToFile += "inService: " + myMap.find("\"inService\"")->second + ". ";
+		writeToFile += (myMap.find("\"receiveTime\"")->second) + string(",");
+		writeToFile += (myMap.find("\"equipmentID\"")->second) + string(",");
+		writeToFile += (myMap.find("\"lat\"")->second) + string(",");
+		writeToFile += (myMap.find("\"lng\"")->second) + string(",");
+		writeToFile += (myMap.find("\"nextStopID\"")->second) + string(",");
+		writeToFile += (myMap.find("\"routeID\"")->second) + string(",");
+		writeToFile += myMap.find("\"inService\"")->second;
 		if (lineCount > MAX_LOG_PER_FILE) {
 			fileCount++;
 			lineCount = 0;
+			firstWriteToThisFile = true;
 		} else {
 			lineCount++;
 		}
-		ofstream outputFile("record" + to_string(fileCount) + ".txt", ios::app);
+		if (firstWrite || firstWriteToThisFile) {
+			curFileName = "record" + myMap.find("\"receiveTime\"")->second + ".csv";
+			firstWrite = false;
+		}
+		ofstream outputFile(curFileName, ios::app);
+		if (firstWriteToThisFile) {
+			outputFile << "\"timestamps\",\"busNum\",\"lat\",\"lng\",\"nextStopID\",\"routeID\",\"inService\"" << endl;
+			firstWriteToThisFile = false;
+		}
 		outputFile << writeToFile << endl;
 		outputFile.close();
 	}
 }
 
 int main() {
+	firstWriteToThisFile = true;
+	firstWrite = true;
 	while (true) {
 		pid_t childPid = fork();
 		if (childPid == -1) { cout << "fork child error" << endl; }
@@ -94,7 +107,7 @@ int main() {
 		inputFile >> content;
 		inputFile.close();
 		parseUsefulContent(content);
-		sleep(5);
+		sleep(10);
 	}
     return 0;   
 }
