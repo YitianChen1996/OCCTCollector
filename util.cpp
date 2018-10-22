@@ -73,6 +73,7 @@ void processRecord(const map<string, string> &myMap, GlobalVariables &globals) {
         globals.busToStopsMap[busNum].push_back(nextStopID);
     }
     if (globals.busToStopsMap[busNum].front() == globals.LOOP1STOP && globals.busToStopsMap[busNum].back() == globals.LOOP2STOP) {
-        LOG_INFO("Bus " + to_string(busNum) + " has finished one loop");
+        /* Do something to update SF */
+		LOG_INFO("Bus " + to_string(busNum) + " has finished one loop");
     }
 }
