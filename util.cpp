@@ -55,6 +55,9 @@ void parseUsefulContent(const string &content, GlobalVariables &globals) {
 void processRecord(const map<string, string> &myMap, GlobalVariables &globals) {
     int routeID = stoi(myMap.find("\"routeID\"")->second, nullptr, 10);
     int inService = stoi(myMap.find("\"inService\"")->second, nullptr, 10);
+    static int sf_bus[7] = {0};
+    const int buses[7] = {380, 381, 747, 748, 762, 763, 777};
+    int i; char strcmd[128];
     // If the route is not the campus shuttle's route or it is not in service, do not process.
     if (routeID != globals.CAMPUS_SHUTTLE_ROUTEID || inService == 0) {
         return;
@@ -74,6 +77,11 @@ void processRecord(const map<string, string> &myMap, GlobalVariables &globals) {
     }
     if (globals.busToStopsMap[busNum].front() == globals.LOOP1STOP && globals.busToStopsMap[busNum].back() == globals.LOOP2STOP) {
         /* Do something to update SF */
-		LOG_INFO("Bus " + to_string(busNum) + " has finished one loop");
+        for (i=0; i<7; i++) if (buses[i] == busNum) break;
+        if (i==7) return; //unknown bus number
+        sf_bus[i] = (sf_bus[i] + 1) % 6;
+        sprintf(strcmd, "echo %d | ncat 128.226.123.247 10%03d", sf_bus[i] + 7, busNum);
+        system(strcmd);
+        LOG_INFO("Bus " + to_string(busNum) + " has finished one loop");
     }
 }
