@@ -80,7 +80,7 @@ void processRecord(const map<string, string> &myMap, GlobalVariables &globals) {
         for (i=0; i<7; i++) if (buses[i] == busNum) break;
         if (i==7) return; //unknown bus number
         sf_bus[i] = (sf_bus[i] + 1) % 6;
-        sprintf(strcmd, "echo %d | ncat 128.226.123.247 10%03d", sf_bus[i] + 7, busNum);
+        sprintf(strcmd, "echo %d | ncat 128.226.123.247 111%02d", sf_bus[i] + 7, busNum % 100);
         system(strcmd);
         LOG_INFO("Bus " + to_string(busNum) + " has finished one loop");
     }
