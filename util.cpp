@@ -2,6 +2,7 @@
 
 void parseUsefulContent(const string &content, GlobalVariables &globals, bool RR) {
 	size_t contentLen = content.length(), pos = 0;
+	bool is_loop;
 	// For each log, parse begin at routeID, end at receiveTime
 	while (true) {
 		map<string, string> myMap;
@@ -22,7 +23,7 @@ void parseUsefulContent(const string &content, GlobalVariables &globals, bool RR
 			myMap.insert(make_pair(key, value));
 			if (key == "\"receiveTime\"") { break; }
 		}
-                bool is_loop = processRecord(myMap, globals, RR);
+                is_loop = processRecord(myMap, globals, RR);
 		string writeToFile;
 		writeToFile += (myMap.find("\"receiveTime\"")->second) + string(",");
 		writeToFile += (myMap.find("\"equipmentID\"")->second) + string(",");
@@ -63,8 +64,8 @@ bool processRecord(const map<string, string> &myMap, GlobalVariables &globals, b
     if (routeID != globals.CAMPUS_SHUTTLE_ROUTEID || inService == 0) {
         return false;
     }
-	string busNumStr = myMap.find("\"equipmentID\"")->second;
-	busNumStr = busNumStr.substr(1, busNumStr.length() - 2); // remove the quota.
+    string busNumStr = myMap.find("\"equipmentID\"")->second;
+    busNumStr = busNumStr.substr(1, busNumStr.length() - 2); // remove the quota.
     int busNum = stoi(busNumStr, nullptr, 10);
     int nextStopID = stoi(myMap.find("\"nextStopID\"")->second, nullptr, 10);
     if (globals.busToStopsMap.find(busNum) == globals.busToStopsMap.end()) {
