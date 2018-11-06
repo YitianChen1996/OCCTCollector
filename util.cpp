@@ -61,7 +61,7 @@ bool processRecord(const map<string, string> &myMap, GlobalVariables &globals, b
     int i; char strcmd[128];
     // If the route is not the campus shuttle's route or it is not in service, do not process.
     if (routeID != globals.CAMPUS_SHUTTLE_ROUTEID || inService == 0) {
-        return;
+        return false;
     }
 	string busNumStr = myMap.find("\"equipmentID\"")->second;
 	busNumStr = busNumStr.substr(1, busNumStr.length() - 2); // remove the quota.
