@@ -1,6 +1,6 @@
 #include "base.h"
 
-void parseUsefulContent(const string &content, GlobalVariables &globals) {
+void parseUsefulContent(const string &content, GlobalVariables &globals, bool RR) {
 	size_t contentLen = content.length(), pos = 0;
 	// For each log, parse begin at routeID, end at receiveTime
 	while (true) {
@@ -22,7 +22,7 @@ void parseUsefulContent(const string &content, GlobalVariables &globals) {
 			myMap.insert(make_pair(key, value));
 			if (key == "\"receiveTime\"") { break; }
 		}
-        processRecord(myMap, globals);
+                bool is_loop = processRecord(myMap, globals, RR);
 		string writeToFile;
 		writeToFile += (myMap.find("\"receiveTime\"")->second) + string(",");
 		writeToFile += (myMap.find("\"equipmentID\"")->second) + string(",");
@@ -30,7 +30,8 @@ void parseUsefulContent(const string &content, GlobalVariables &globals) {
 		writeToFile += (myMap.find("\"lng\"")->second) + string(",");
 		writeToFile += (myMap.find("\"nextStopID\"")->second) + string(",");
 		writeToFile += (myMap.find("\"routeID\"")->second) + string(",");
-		writeToFile += myMap.find("\"inService\"")->second;
+		writeToFile += myMap.find("\"inService\"")->second + string(",");
+		writeToFile += is_loop;
 		if (globals.lineCount > globals.MAX_LOG_PER_FILE) {
 			globals.fileCount++;
 			globals.lineCount = 0;
@@ -44,7 +45,7 @@ void parseUsefulContent(const string &content, GlobalVariables &globals) {
 		}
 		ofstream outputFile(globals.curFileName, ios::app);
 		if (globals.firstWriteToThisFile) {
-			outputFile << "\"timestamps\",\"busNum\",\"lat\",\"lng\",\"nextStopID\",\"routeID\",\"inService\"" << endl;
+			outputFile << "\"timestamps\",\"busNum\",\"lat\",\"lng\",\"nextStopID\",\"routeID\",\"inService\",\"loopCompleted\"" << endl;
 			globals.firstWriteToThisFile = false;
 		}
 		outputFile << writeToFile << endl;
@@ -52,7 +53,7 @@ void parseUsefulContent(const string &content, GlobalVariables &globals) {
 	}
 }
 
-void processRecord(const map<string, string> &myMap, GlobalVariables &globals) {
+bool processRecord(const map<string, string> &myMap, GlobalVariables &globals, bool RR) {
     int routeID = stoi(myMap.find("\"routeID\"")->second, nullptr, 10);
     int inService = stoi(myMap.find("\"inService\"")->second, nullptr, 10);
     static int sf_bus[7] = {0};
@@ -76,12 +77,16 @@ void processRecord(const map<string, string> &myMap, GlobalVariables &globals) {
         globals.busToStopsMap[busNum].push_back(nextStopID);
     }
     if (globals.busToStopsMap[busNum].front() == globals.LOOP1STOP && globals.busToStopsMap[busNum].back() == globals.LOOP2STOP) {
-        /* Do something to update SF */
-        for (i=0; i<7; i++) if (buses[i] == busNum) break;
-        if (i==7) return; //unknown bus number
-        sf_bus[i] = (sf_bus[i] + 1) % 6;
-        sprintf(strcmd, "echo %d | ncat 128.226.123.247 111%02d", sf_bus[i] + 7, busNum % 100);
-        system(strcmd);
+        /* Completed loop detected */
+        for (i = 0; i < 7; i++) if (buses[i] == busNum) break;
+        if (i == 7) return false; //unknown bus number
+        if (RR) {  //SF round robin
+            sf_bus[i] = (sf_bus[i] + 1) % 6;
+            sprintf(strcmd, "echo %d | ncat 128.226.123.247 111%02d", sf_bus[i] + 7, busNum % 100);
+            system(strcmd);
+        }
         LOG_INFO("Bus " + to_string(busNum) + " has finished one loop");
+        return true;
     }
+    return false;
 }
