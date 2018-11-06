@@ -27,7 +27,7 @@ struct GlobalVariables {
     const int LOOP2STOP = 264;
 };
 
-bool processRecord(const map<string, string> &myMap, GlobalVariables &globals, bool RR);
+unsigned char processRecord(const map<string, string> &myMap, GlobalVariables &globals, bool RR);
 
 void parseUsefulContent(const string &content, GlobalVariables &globals, bool RR);
 
