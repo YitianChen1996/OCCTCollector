@@ -1,6 +1,6 @@
 #include "base.h"
 
-int main() {
+int main(int argn, char* argv[]) {
 	GlobalVariables globals;
 	globals.firstWriteToThisFile = true;
 	globals.firstWrite = true;
@@ -14,13 +14,15 @@ int main() {
 			childArgv[1] = (char*) malloc(4 * sizeof(char)); // for "-O"
 			childArgv[2] = (char*) malloc(20 * sizeof(char)); // for output file name
 			childArgv[3] = (char*) malloc(100 * sizeof(char)); // for the url
-			childArgv[4] = NULL; // request by execvp call
+			childArgv[4] = NULL; // required by execvp call
 			strcpy(childArgv[0], "wget");
 			strcpy(childArgv[1], "-O");
 			strcpy(childArgv[2], globals.tempFileName.c_str());
 			strcpy(childArgv[3], globals.requestURL.c_str());
 			execvp("wget", childArgv);
-			LOG_INFO("[ERROR], you shouldn't arrive at here");
+			LOG_INFO("[ERROR], you shouldn't arrive at here"); //why??
+			for (int i = 0; i <= 4; i++) free(childArgv[i]);
+			free(childArgv);
 			exit(0);
 		}
 
@@ -40,7 +42,7 @@ int main() {
 		ifstream inputFile(globals.tempFileName);
 		inputFile >> content;
 		inputFile.close();
-		parseUsefulContent(content, globals);
+		parseUsefulContent(content, globals, argn == 2 && argv[1][0] == 'r');
 		sleep(10);
 	}
     return 0;   
