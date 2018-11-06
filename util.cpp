@@ -2,7 +2,7 @@
 
 void parseUsefulContent(const string &content, GlobalVariables &globals, bool RR) {
 	size_t contentLen = content.length(), pos = 0;
-	bool is_loop;
+	unsigned char is_loop;
 	// For each log, parse begin at routeID, end at receiveTime
 	while (true) {
 		map<string, string> myMap;
@@ -23,7 +23,7 @@ void parseUsefulContent(const string &content, GlobalVariables &globals, bool RR
 			myMap.insert(make_pair(key, value));
 			if (key == "\"receiveTime\"") { break; }
 		}
-                is_loop = processRecord(myMap, globals, RR);
+		is_loop = processRecord(myMap, globals, RR);
 		string writeToFile;
 		writeToFile += (myMap.find("\"receiveTime\"")->second) + string(",");
 		writeToFile += (myMap.find("\"equipmentID\"")->second) + string(",");
@@ -32,7 +32,7 @@ void parseUsefulContent(const string &content, GlobalVariables &globals, bool RR
 		writeToFile += (myMap.find("\"nextStopID\"")->second) + string(",");
 		writeToFile += (myMap.find("\"routeID\"")->second) + string(",");
 		writeToFile += myMap.find("\"inService\"")->second + string(",");
-		writeToFile += is_loop;
+		writeToFile += '0' + is_loop;
 		if (globals.lineCount > globals.MAX_LOG_PER_FILE) {
 			globals.fileCount++;
 			globals.lineCount = 0;
@@ -54,7 +54,7 @@ void parseUsefulContent(const string &content, GlobalVariables &globals, bool RR
 	}
 }
 
-bool processRecord(const map<string, string> &myMap, GlobalVariables &globals, bool RR) {
+unsigned char processRecord(const map<string, string> &myMap, GlobalVariables &globals, bool RR) {
     int routeID = stoi(myMap.find("\"routeID\"")->second, nullptr, 10);
     int inService = stoi(myMap.find("\"inService\"")->second, nullptr, 10);
     static int sf_bus[7] = {0};
@@ -62,7 +62,7 @@ bool processRecord(const map<string, string> &myMap, GlobalVariables &globals, b
     int i; char strcmd[128];
     // If the route is not the campus shuttle's route or it is not in service, do not process.
     if (routeID != globals.CAMPUS_SHUTTLE_ROUTEID || inService == 0) {
-        return false;
+        return 0;
     }
     string busNumStr = myMap.find("\"equipmentID\"")->second;
     busNumStr = busNumStr.substr(1, busNumStr.length() - 2); // remove the quota.
@@ -80,14 +80,14 @@ bool processRecord(const map<string, string> &myMap, GlobalVariables &globals, b
     if (globals.busToStopsMap[busNum].front() == globals.LOOP1STOP && globals.busToStopsMap[busNum].back() == globals.LOOP2STOP) {
         /* Completed loop detected */
         for (i = 0; i < 7; i++) if (buses[i] == busNum) break;
-        if (i == 7) return false; //unknown bus number
+        if (i == 7) return 0; //unknown bus number
         if (RR) {  //SF round robin
             sf_bus[i] = (sf_bus[i] + 1) % 6;
             sprintf(strcmd, "echo %d | ncat 128.226.123.247 111%02d", sf_bus[i] + 7, busNum % 100);
             system(strcmd);
         }
         LOG_INFO("Bus " + to_string(busNum) + " has finished one loop");
-        return true;
+        return 1;
     }
-    return false;
+    return 0;
 }
